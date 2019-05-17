@@ -1,18 +1,23 @@
 import sys
 import json
 from numpy import *
+import scipy.linalg
 
-def step(u, dx, dt, U, nu, sigma, rho, beta):
-    um = vstack([zeros([1,3]), u[:-1]])
-    up = vstack([u[1:], zeros([1,3])])
-    dudx = (u - um) / dx
-    d2udx2 = (up + um - 2 * u) / dx**2
-    x, y, z = u.T
-    dxdt = sigma * (y - x)
-    dydt = x * (rho - z) - y
-    dzdt = x * y - beta * z
-    dudt = transpose([dxdt, dydt, dzdt]) - U * dudx + nu * d2udx2
-    u += dudt * dt
+class Stepper:
+    def __init__(self, Nx, dx, dt, nu):
+        self.ab = zeros([3, Nx])
+        self.ab[1] = 2 * nu / dx**2 * dt + 1
+        self.ab[0] = -nu / dx**2 * dt
+        self.ab[2] = -nu / dx**2 * dt
+        self.dt = dt
+
+    def __call__(self, u, sigma, rho, beta):
+        x, y, z = u.T
+        dxdt = sigma * (y - x)
+        dydt = x * (rho - z) - y
+        dzdt = x * y - beta * z
+        dudt = transpose([dxdt, dydt, dzdt])
+        u[:] = scipy.linalg.solve_banded((1,1), self.ab, u + dudt * self.dt)
 
 def animate():
     config = json.load(open('config.json'))
@@ -20,14 +25,17 @@ def animate():
     xGrid = linspace(config['xMin'], config['xMax'], Nx)
     dx = xGrid[1] - xGrid[0]
     dt = config['Dt']
-    U = 0
     nu = 1 / config['Re']
-    rho = config['Ra'] * exp(-xGrid**2 / 2)
+    rho = config['Ra'] * ones(Nx)
     u = ones([Nx, 3]) * config['init']
+    step = Stepper(Nx, dx, dt, nu)
     sigma, beta = 10, 8./3
-    for j in range(100):
+    for i in range(1000000):
+        step(u, sigma, rho, beta)
+    print('run up complete')
+    for j in range(1001):
         for i in range(10):
-            step(u, dx, dt, U, nu, sigma, rho, beta)
+            step(u, sigma, rho, beta)
         cla()
         plot(xGrid, u[:,2])
         ylim([0, 50])
@@ -41,7 +49,7 @@ if __name__ == '__main__':
     dt = config['Dt']
     U = 0
     nu = 1 / config['Re']
-    rho = config['Ra'] * exp(-xGrid**2 / 2)
+    rho = config['Ra'] * ones(Nx)
     if 'init' in config:
         u = ones([Nx, 3]) * config['init']
     else:
@@ -50,7 +58,8 @@ if __name__ == '__main__':
         assert u.shape[0] == Nx
 
     sigma, beta = 10, 8./3
+    step = Stepper(Nx, dx, dt, nu)
     for i in range(config['Nt']):
-        step(u, dx, dt, U, nu, sigma, rho, beta)
+        step(u, sigma, rho, beta)
 
     open('final.dat', 'wb').write(u.tobytes())
