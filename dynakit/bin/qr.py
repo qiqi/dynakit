@@ -4,6 +4,36 @@ import glob
 from mpi4py import MPI
 from numpy import *
 
+'''
+Usage: mpiexec -np k python3 qr.py
+
+The script should be run in a directory with the following input files:
+
+    input_0.dat
+    input_1.dat
+    ...
+    input_m.dat
+
+Note that m does not need to coincide with k, the number of MPI ranks.
+Each input file should be a binary file containing N double precision
+floating points.  Parallel QR decomposition will be performed on the
+N x m matrix.
+
+The script will produce a series of output files:
+
+    output_0.dat
+    output_1.dat
+    ...
+    output_m.dat
+
+Each will be a binary file containing N double precision floating points.
+These files form the Q matrix of the QR decomposition.  It will also
+produce the m x m R matrix, stored as m x m double precision floating points
+in the output file
+
+    output_R.dat
+'''
+
 def probe_Nm(comm):
     rank = comm.Get_rank()
     if rank == 0:
@@ -77,10 +107,12 @@ def write_R_matrix(comm, R):
         with open('output_R.dat', 'wb') as f:
             f.write(R.tobytes())
 
-N, m = probe_Nm(MPI.COMM_WORLD)
-myA = read_matrix(MPI.COMM_WORLD, N, m)
-myQ, myR = linalg.qr(myA)
-QR, RR = stacked_qr(MPI.COMM_WORLD, myR)
-myQ = dot(myQ, QR)
-write_Q_matrix(MPI.COMM_WORLD, myQ)
-write_R_matrix(MPI.COMM_WORLD, RR)
+if __name__ == '__main__':
+    N, m = probe_Nm(MPI.COMM_WORLD)
+    myA = read_matrix(MPI.COMM_WORLD, N, m)
+    myQ, myR = linalg.qr(myA)
+    QR, RR = stacked_qr(MPI.COMM_WORLD, myR)
+    myQ = dot(myQ, QR)
+    write_Q_matrix(MPI.COMM_WORLD, myQ)
+    write_R_matrix(MPI.COMM_WORLD, RR)
+
