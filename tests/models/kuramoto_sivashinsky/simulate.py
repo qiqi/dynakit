@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import matplotlib
 matplotlib.use('Agg')
 import sys
@@ -47,12 +49,10 @@ class Stepper:
 
     def __call__(self, u):
         ux = self.M_grad * u
-        rhs = u - self.M_linear * u / 4 # - dt / 2 * ux**2
-        rhs = u - dt / 4 * ux * u
+        rhs = u - self.M_linear * u / 4 - dt / 2 * ux * u
         uMid = scipy.sparse.linalg.spsolve(self.M_quarter, rhs)
-        return uMid
         ux = self.M_grad * uMid
-        rhs = u - self.M_linear * (u + uMid) / 3 - dt * ux**2
+        rhs = u - self.M_linear * (u + uMid) / 3 - dt * ux * uMid
         return scipy.sparse.linalg.spsolve(self.M_third, rhs)
 
 def animate():
