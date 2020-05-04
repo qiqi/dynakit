@@ -1,5 +1,6 @@
 import sys
 import json
+import pylab
 from numpy import *
 import scipy.linalg
 
@@ -9,6 +10,8 @@ class Stepper:
         self.ab[1] = 2 * nu / dx**2 * dt + 1
         self.ab[0] = -nu / dx**2 * dt
         self.ab[2] = -nu / dx**2 * dt
+        self.ab[1,0] = nu / dx**2 * dt + 1
+        self.ab[1,-1] = nu / dx**2 * dt + 1
         self.dt = dt
 
     def __call__(self, u, sigma, rho, beta):
@@ -27,19 +30,19 @@ def animate():
     dt = config['Dt']
     nu = 1 / config['Re']
     rho = config['Ra'] * ones(Nx)
-    u = ones([Nx, 3]) * config['init']
+    u = (ones([Nx, 3]) + random.rand(Nx, 3) * 0.00001) * config['init']
     step = Stepper(Nx, dx, dt, nu)
     sigma, beta = 10, 8./3
-    for i in range(1000000):
+    for i in range(100000):
         step(u, sigma, rho, beta)
     print('run up complete')
     for j in range(1001):
         for i in range(10):
             step(u, sigma, rho, beta)
-        cla()
-        plot(xGrid, u[:,2])
-        ylim([0, 50])
-        savefig('figs/{:03d}.png'.format(j))
+        pylab.cla()
+        pylab.plot(xGrid, u[:,2])
+        pylab.ylim([0, 75])
+        pylab.pause(0.001)
 
 if __name__ == '__main__':
     config = json.load(open('config.json'))
@@ -51,7 +54,7 @@ if __name__ == '__main__':
     nu = 1 / config['Re']
     rho = config['Ra'] * ones(Nx)
     if 'init' in config:
-        u = ones([Nx, 3]) * config['init']
+        u = (ones([Nx, 3]) + random.rand(Nx, 3) * 0.00001) * config['init']
     else:
         u = frombuffer(open('init.dat', 'rb').read(), float64)
         u = u.reshape([-1,3])
