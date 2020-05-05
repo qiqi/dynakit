@@ -2,7 +2,6 @@
 
 import matplotlib
 matplotlib.use('Agg')
-import sys
 import json
 import pylab
 from numpy import *
@@ -54,28 +53,6 @@ class Stepper:
         ux = self.M_grad * uMid
         rhs = u - self.M_linear * (u + uMid) / 3 - dt * ux * uMid
         return scipy.sparse.linalg.spsolve(self.M_third, rhs)
-
-def animate():
-    config = json.load(open('config.json'))
-    Nx = config['Nx']
-    xGrid = linspace(config['xMin'], config['xMax'], Nx)
-    dx = xGrid[1] - xGrid[0]
-    dt = config['Dt']
-    nu = 1 / config['Re']
-    rho = config['Ra'] * ones(Nx)
-    u = (ones([Nx, 3]) + random.rand(Nx, 3) * 0.00001) * config['init']
-    step = Stepper(Nx, dx, dt, nu)
-    sigma, beta = 10, 8./3
-    for i in range(100000):
-        step(u, sigma, rho, beta)
-    print('run up complete')
-    for j in range(1001):
-        for i in range(10):
-            step(u, sigma, rho, beta)
-        pylab.cla()
-        pylab.plot(xGrid, u[:,2])
-        pylab.ylim([0, 75])
-        pylab.pause(0.001)
 
 if __name__ == '__main__':
     config = json.load(open('config.json'))
