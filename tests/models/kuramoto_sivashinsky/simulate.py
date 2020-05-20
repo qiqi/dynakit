@@ -61,7 +61,7 @@ if __name__ == '__main__':
     dt = config['dt']
     Nt = config['Nt']
     u = frombuffer(open('init.dat', 'rb').read(), float64)
-    assert u.shape[0] == Nx
+    assert u.size == Nx
 
     if 'savefig' in config:
         history = [u]

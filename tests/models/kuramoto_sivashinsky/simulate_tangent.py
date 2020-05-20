@@ -19,7 +19,7 @@ class Stepper(simulate.Stepper):
         rhsTan = uTan - (self.M_linear * uTan.T).T / 4 \
                - dt / 2 * (ux * uTan + uxTan * u)
         uMid = scipy.sparse.linalg.spsolve(self.M_quarter, rhs)
-        uMidTan = scipy.sparse.linalg.spsolve(self.M_quarter, rhsTan)
+        uMidTan = scipy.sparse.linalg.spsolve(self.M_quarter, rhsTan.T).T
         ux = self.M_grad * uMid
         uxTan = (self.M_grad * uMidTan.T).T
         rhs = u - self.M_linear * (u + uMid) / 3 - dt * ux * uMid
@@ -37,6 +37,7 @@ if __name__ == '__main__':
     u = frombuffer(open('init.dat', 'rb').read(), float64)
     uTan = [frombuffer(open('init_{}.dat'.format(suf), 'rb').read(), float64)
             for suf in config['tangent_suffixes']]
+    uTan = array(uTan)
     assert u.size == Nx
     assert all([ut.size == Nx for ut in uTan])
 
